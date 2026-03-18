@@ -1,0 +1,20 @@
+{
+  "name": "seobros-mcps",
+  "version": "0.0.1",
+  "private": true,
+  "description": "MCP servers hosted on Cloudflare Workers",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "types": "wrangler types"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.12.1",
+    "agents": "^0.0.98"
+  },
+  "devDependencies": {
+    "@types/node": "^25.5.0",
+    "typescript": "^5.8.2",
+    "wrangler": "^4.5.1"
+  }
+}
