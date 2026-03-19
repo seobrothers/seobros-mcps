@@ -3,37 +3,89 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 
 type Env = {
-  MCP_AGENT: DurableObjectNamespace<McpAgentDO>;
+  MCP_OBJECT: DurableObjectNamespace<SeobrosMcp>;
+  APPS_SCRIPT_CREATE_DOC_URL: string;
 };
 
-export class McpAgentDO extends McpAgent<Env, {}, {}> {
+export class SeobrosMcp extends McpAgent {
   server = new McpServer({
     name: "seobros-mcps",
     version: "0.0.1",
   });
 
   async init() {
-    // Example tool — replace with real tools as you add MCP servers
     this.server.tool(
-      "hello",
-      "A simple greeting tool to verify the MCP server is working",
-      { name: z.string().describe("Name to greet") },
-      async ({ name }) => ({
-        content: [{ type: "text", text: `Hello, ${name}! The SEO Bros MCP server is running.` }],
-      })
+      "create_google_doc",
+      "Create a Google Doc from HTML content in the SEO Brothers shared drive. " +
+        "The doc will be viewable by anyone with the link and editable by @seobrothers.co members.",
+      {
+        title: z.string().describe("Title for the Google Doc"),
+        html: z
+          .string()
+          .describe(
+            "HTML content for the document body. Supports standard HTML formatting: " +
+              "headings, paragraphs, lists, tables, bold, italic, links, etc."
+          ),
+      },
+      async ({ title, html }) => {
+        const scriptUrl = (this.env as Env).APPS_SCRIPT_CREATE_DOC_URL;
+        if (!scriptUrl) {
+          return {
+            content: [
+              {
+                type: "text" as const,
+                text: "Error: APPS_SCRIPT_CREATE_DOC_URL is not configured.",
+              },
+            ],
+            isError: true,
+          };
+        }
+
+        const response = await fetch(scriptUrl, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ title, html }),
+        });
+
+        const result = (await response.json()) as {
+          success: boolean;
+          docUrl?: string;
+          docId?: string;
+          title?: string;
+          error?: string;
+        };
+
+        if (!result.success) {
+          return {
+            content: [
+              {
+                type: "text" as const,
+                text: `Failed to create doc: ${result.error}`,
+              },
+            ],
+            isError: true,
+          };
+        }
+
+        return {
+          content: [
+            {
+              type: "text" as const,
+              text: `Created "${result.title}"\n\nURL: ${result.docUrl}\nDoc ID: ${result.docId}`,
+            },
+          ],
+        };
+      }
     );
   }
 }
 
 export default {
-  async fetch(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
+  fetch(request: Request, env: Env, ctx: ExecutionContext) {
     const url = new URL(request.url);
 
-    if (url.pathname === "/mcp" || url.pathname === "/mcp/message" || url.pathname === "/sse") {
-      // Route MCP traffic to the Durable Object
-      const id = env.MCP_AGENT.idFromName("default");
-      const agent = env.MCP_AGENT.get(id);
-      return agent.fetch(request);
+    if (url.pathname === "/mcp") {
+      return SeobrosMcp.serve("/mcp").fetch(request, env, ctx);
     }
 
     return new Response("SEO Bros MCP Server\n\nConnect via /mcp", {

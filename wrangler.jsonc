@@ -6,15 +6,15 @@
   "durable_objects": {
     "bindings": [
       {
-        "name": "MCP_AGENT",
-        "class_name": "McpAgentDO"
+        "name": "MCP_OBJECT",
+        "class_name": "SeobrosMcp"
       }
     ]
   },
   "migrations": [
     {
       "tag": "v1",
-      "new_classes": ["McpAgentDO"]
+      "new_sqlite_classes": ["SeobrosMcp"]
     }
   ]
 }

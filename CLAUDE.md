@@ -1,0 +1,4 @@
+- MCP servers for our white label SEO company, SEO Brothers.
+- These servers are running on Cloudflare workers.
+- Built primarily to wrap external tools for our team's Claude Cowork instances, but sometimes they are internal db and tooling.
+- These workers are deployed via wrangler command line, not a repo/github sync.
