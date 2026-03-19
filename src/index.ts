@@ -1,95 +1,29 @@
-import { McpAgent } from "agents/mcp";
-import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { z } from "zod";
+import { GoogleDocsMcp } from "./google-docs";
 
-type Env = {
-  MCP_OBJECT: DurableObjectNamespace<SeobrosMcp>;
+export type Env = {
+  MCP_OBJECT: DurableObjectNamespace<GoogleDocsMcp>;
   APPS_SCRIPT_CREATE_DOC_URL: string;
 };
 
-export class SeobrosMcp extends McpAgent {
-  server = new McpServer({
-    name: "seobros-mcps",
-    version: "0.0.1",
-  });
-
-  async init() {
-    this.server.tool(
-      "create_google_doc",
-      "Create a Google Doc from HTML content in the SEO Brothers shared drive. " +
-        "The doc will be viewable by anyone with the link and editable by @seobrothers.co members.",
-      {
-        title: z.string().describe("Title for the Google Doc"),
-        html: z
-          .string()
-          .describe(
-            "HTML content for the document body. Supports standard HTML formatting: " +
-              "headings, paragraphs, lists, tables, bold, italic, links, etc."
-          ),
-      },
-      async ({ title, html }) => {
-        const scriptUrl = (this.env as Env).APPS_SCRIPT_CREATE_DOC_URL;
-        if (!scriptUrl) {
-          return {
-            content: [
-              {
-                type: "text" as const,
-                text: "Error: APPS_SCRIPT_CREATE_DOC_URL is not configured.",
-              },
-            ],
-            isError: true,
-          };
-        }
-
-        const response = await fetch(scriptUrl, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ title, html }),
-        });
-
-        const result = (await response.json()) as {
-          success: boolean;
-          docUrl?: string;
-          docId?: string;
-          title?: string;
-          error?: string;
-        };
-
-        if (!result.success) {
-          return {
-            content: [
-              {
-                type: "text" as const,
-                text: `Failed to create doc: ${result.error}`,
-              },
-            ],
-            isError: true,
-          };
-        }
-
-        return {
-          content: [
-            {
-              type: "text" as const,
-              text: `Created "${result.title}"\n\nURL: ${result.docUrl}\nDoc ID: ${result.docId}`,
-            },
-          ],
-        };
-      }
-    );
-  }
-}
+// Re-export DO classes so wrangler can find them
+export { GoogleDocsMcp };
 
 export default {
   fetch(request: Request, env: Env, ctx: ExecutionContext) {
     const url = new URL(request.url);
 
-    if (url.pathname === "/mcp") {
-      return SeobrosMcp.serve("/mcp").fetch(request, env, ctx);
+    if (url.pathname.startsWith("/google-docs")) {
+      return GoogleDocsMcp.serve("/google-docs").fetch(request, env, ctx);
     }
 
-    return new Response("SEO Bros MCP Server\n\nConnect via /mcp", {
-      headers: { "content-type": "text/plain" },
-    });
+    // Add new MCP servers here:
+    // if (url.pathname.startsWith("/something-else")) {
+    //   return SomethingElseMcp.serve("/something-else").fetch(request, env, ctx);
+    // }
+
+    return new Response(
+      "SEO Bros MCP Servers\n\nAvailable endpoints:\n  /google-docs - Create Google Docs",
+      { headers: { "content-type": "text/plain" } }
+    );
   },
 };
