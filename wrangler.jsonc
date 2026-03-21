@@ -21,6 +21,14 @@
       "renamed_classes": [
         { "from": "SeobrosMcp", "to": "GoogleDocsMcp" }
       ]
+    },
+    {
+      "tag": "v3",
+      "new_sqlite_classes": ["MissiveMcp"]
+    },
+    {
+      "tag": "v4",
+      "deleted_classes": ["MissiveMcp"]
     }
   ]
 }
